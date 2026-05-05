@@ -15,8 +15,10 @@ import {
   ChevronsUpDown,
   ShoppingCart,
   CheckCircle2,
+  BarChart2,
 } from 'lucide-react'
 import { inventoryData, InventoryItem, StockStatus, TrendDirection } from '@/lib/data'
+import { SKUDrawer } from '@/components/inventory/SKUDrawer'
 
 type StatusFilter = 'all' | StockStatus
 type SortField = 'product' | 'currentStock' | 'reorderPoint' | 'unitValue'
@@ -59,6 +61,7 @@ export default function InventoryPage() {
   const [sortField, setSortField] = useState<SortField>('product')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [reorderedIds, setReorderedIds] = useState<Set<number>>(new Set())
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
 
   const categories = useMemo(
     () => ['all', ...Array.from(new Set(inventoryData.map((i) => i.category))).sort()],
@@ -116,6 +119,7 @@ export default function InventoryPage() {
 
   return (
     <AppShell>
+      <SKUDrawer item={selectedItem} onClose={() => setSelectedItem(null)} />
       {/* Header */}
       <div className="border-b border-[#1E2D4A] bg-[#070B14]/95 backdrop-blur-sm sticky top-0 z-40">
         <div className="px-8 h-16 flex items-center justify-between">
@@ -239,9 +243,16 @@ export default function InventoryPage() {
                 const isReordered = reorderedIds.has(item.id)
 
                 return (
-                  <TableRow key={item.id} className="!border-b !border-[#131929] hover:!bg-[#0D1726] transition-colors">
+                  <TableRow
+                    key={item.id}
+                    className="!border-b !border-[#131929] hover:!bg-[#0D1726] transition-colors cursor-pointer group"
+                    onClick={() => setSelectedItem(item)}
+                  >
                     <TableCell className="!py-3.5">
-                      <span className="text-[13px] font-semibold text-[#D1D9EE]">{item.product}</span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-[#D1D9EE]">{item.product}</span>
+                        <BarChart2 className="w-3 h-3 text-[#2A3A5C] group-hover:text-emerald-500/60 transition-colors flex-shrink-0" />
+                      </span>
                     </TableCell>
                     <TableCell className="!py-3.5">
                       <span className="text-[11px] font-mono text-[#6B7A9F] bg-[#0D1422] border border-[#1E2D4A] px-2 py-0.5 rounded">
@@ -287,7 +298,7 @@ export default function InventoryPage() {
                     <TableCell className="!py-3.5">
                       {item.status === 'low' ? (
                         <button
-                          onClick={() => handleReorder(item.id)}
+                          onClick={(e) => { e.stopPropagation(); handleReorder(item.id) }}
                           disabled={isReordered}
                           className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-all ${
                             isReordered

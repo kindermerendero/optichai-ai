@@ -1,5 +1,13 @@
 # Changelog — OptiChain AI
 
+## [2026-05-05] — SKU Detail Drawer con grafici per-item
+
+### Aggiunto
+- `components/inventory/SKUDrawer.tsx`: drawer laterale (580px, slide-in) con AreaChart stock 12 mesi, LineChart EOQ cost curve, cost breakdown cards, ABC class insight
+- `lib/eoq.ts`: `generateStockHistory` (simulazione sawtooth deterministica via seeded random), `generateEOQCurve` (curva costi vs Q), `getHoldingCostRate`
+- Righe tabella inventory cliccabili (cursor-pointer + icona BarChart2 hover) per aprire il drawer
+- Escape e click backdrop chiudono il drawer; click "Reorder" non propaga al row click
+
 ## [2026-05-05] — Step 2/3/4: Inventory, Forecasting, Settings + README
 
 ### Aggiunto

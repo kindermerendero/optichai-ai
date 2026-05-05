@@ -1,3 +1,70 @@
+import type { InventoryItem } from './data'
+
+const ORDERING_COST = 40 // $ per order, fixed assumption
+
+export function getHoldingCostRate(unitValue: number): number {
+  return unitValue * 0.25
+}
+
+export interface StockPoint {
+  month: string
+  'Stock Level': number
+  'Reorder Point': number
+}
+
+export interface CostPoint {
+  Q: string
+  'Ordering Cost': number
+  'Holding Cost': number
+  'Total Cost': number
+}
+
+function seededRand(seed: number, i: number): number {
+  const x = Math.sin(seed * 127.1 + i * 311.7) * 43758.5453
+  return x - Math.floor(x)
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+export function generateStockHistory(item: InventoryItem): StockPoint[] {
+  const H = getHoldingCostRate(item.unitValue)
+  const eoqQty = Math.max(1, Math.round(Math.sqrt((2 * item.annualDemand * ORDERING_COST) / H)))
+  const monthlyDemand = item.annualDemand / 12
+  let stock = Math.max(item.currentStock, item.reorderPoint * 2 + eoqQty)
+  const result: StockPoint[] = []
+  for (let i = 0; i < 12; i++) {
+    const variance = 0.82 + seededRand(item.id, i) * 0.36
+    stock -= monthlyDemand * variance
+    if (stock <= item.reorderPoint) stock += eoqQty
+    result.push({
+      month: MONTHS[i],
+      'Stock Level': Math.round(Math.max(0, stock)),
+      'Reorder Point': item.reorderPoint,
+    })
+  }
+  return result
+}
+
+export function generateEOQCurve(item: InventoryItem): { points: CostPoint[]; eoq: number } {
+  const H = getHoldingCostRate(item.unitValue)
+  const eoq = Math.max(1, Math.round(Math.sqrt((2 * item.annualDemand * ORDERING_COST) / H)))
+  const minQ = Math.max(1, Math.round(eoq * 0.2))
+  const maxQ = Math.round(eoq * 3.5)
+  const step = Math.max(1, Math.round((maxQ - minQ) / 10))
+  const points: CostPoint[] = []
+  for (let q = minQ; q <= maxQ; q += step) {
+    const orderingCost = (item.annualDemand / q) * ORDERING_COST
+    const holdingCost = (q / 2) * H
+    points.push({
+      Q: String(q),
+      'Ordering Cost': Math.round(orderingCost),
+      'Holding Cost': Math.round(holdingCost),
+      'Total Cost': Math.round(orderingCost + holdingCost),
+    })
+  }
+  return { points, eoq }
+}
+
 /**
  * Economic Order Quantity (EOQ) model — Wilson formula
  * Q* = sqrt(2DS / H)
